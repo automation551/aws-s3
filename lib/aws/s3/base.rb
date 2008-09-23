@@ -99,7 +99,7 @@ module AWS #:nodoc:
         # Rather than infering the current bucket from the subdomain, the current class' bucket can be explicitly set with
         # set_current_bucket_to.
         def current_bucket
-          connection.subdomain or raise CurrentBucketNotSpecified.new(connection.http.address)
+          connection.implicit_bucket or raise CurrentBucketNotSpecified.new(connection.http.address)
         end
         
         # If you plan on always using a specific bucket for certain files, you can skip always having to specify the bucket by creating 

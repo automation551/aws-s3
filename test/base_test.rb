@@ -128,6 +128,11 @@ class MultiConnectionsTest < Test::Unit::TestCase
     assert_nothing_raised do
       assert_equal 'foo-bucket', S3Object.current_bucket
     end
+		
+		S3Object.establish_connection!(:server => 'foo-bucket.com')
+		assert_nothing_raised do
+			assert_equal 'foo-bucket.com', S3Object.current_bucket
+		end
   end
   
   def test_setting_the_current_bucket

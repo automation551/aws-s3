@@ -84,24 +84,39 @@ class ConnectionTest < Test::Unit::TestCase
 
   def test_url_for_uses_default_protocol_server_and_port
     connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :port => 80)
-    assert_match %r(^http://s3\.amazonaws\.com/foo\?), connection.url_for('/foo')
+    assert_match %r(^http://s3\.amazonaws\.com/foo/bar\?), connection.url_for('/foo/bar')
 
     connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :use_ssl => true, :port => 443)
-    assert_match %r(^https://s3\.amazonaws\.com/foo\?), connection.url_for('/foo')
+    assert_match %r(^https://s3\.amazonaws\.com/foo/bar\?), connection.url_for('/foo/bar')
   end
 
   def test_url_for_remembers_custom_protocol_server_and_port
     connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :server => 'example.org', :port => 555, :use_ssl => true)
-    assert_match %r(^https://example\.org:555/foo\?), connection.url_for('/foo')
+    assert_match %r(^https://example\.org:555/bar\?), connection.url_for('/example.org/bar')
   end
 
   def test_url_for_with_and_without_authenticated_urls
-    connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :server => 'example.org')
+    connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc')
     authenticated = lambda {|url| url['?AWSAccessKeyId']}
-    assert authenticated[connection.url_for('/foo')]
-    assert authenticated[connection.url_for('/foo', :authenticated => true)]
-    assert !authenticated[connection.url_for('/foo', :authenticated => false)]
+    assert authenticated[connection.url_for('/foo/bar')]
+    assert authenticated[connection.url_for('/foo/bar', :authenticated => true)]
+    assert !authenticated[connection.url_for('/foo/bar', :authenticated => false)]
   end
+	
+	def test_url_for_omits_bucket_for_buckets_implicit_in_server
+		connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :server => "foo.#{DEFAULT_HOST}")
+		assert_match %r(^http://foo.#{DEFAULT_HOST}/bar\?), connection.url_for('/foo/bar')
+		
+		connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :server => 'example.org')
+		assert_match %r(^http://example\.org/bar\?), connection.url_for('/example.org/bar')
+	end
+	
+	def test_url_for_raises_error_if_bucket_does_not_match_implicit_bucket
+		connection = Connection.new(:access_key_id => '123', :secret_access_key => 'abc', :server => "foo.#{DEFAULT_HOST}")
+		assert_raises(ServerBucketMismatch) do
+			connection.url_for('/bar/something')
+		end
+	end
   
   def test_connecting_through_a_proxy
     connection = nil

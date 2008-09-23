@@ -63,13 +63,24 @@ module AWS
         path         = self.class.prepare_path(path)
         request      = request_method(:get).new(path, {})
         query_string = query_string_authentication(request, options)
+				# if the bucket is implicit in the host then http path cannot have a bucket in it
+				# this has to be done AFTER we use the full path for query string auth
+				if implicit_bucket
+					bucket = path[%r{^/([^/]+)}, 1]
+					raise ServerBucketMismatch.new(bucket, http.address) unless bucket == implicit_bucket
+					path = path.sub(%r{^/#{implicit_bucket}}, '')
+				end
         returning "#{protocol(options)}#{http.address}#{port_string}#{path}" do |url|
           url << "?#{query_string}" if authenticate
         end
       end
+			
+			def implicit_bucket
+				http.address == DEFAULT_HOST ? nil : subdomain || http.address
+			end
       
       def subdomain
-        http.address[/^([^.]+).#{DEFAULT_HOST}$/, 1]
+        http.address[/^(.+).#{DEFAULT_HOST}$/, 1]
       end
       
       def persistent?

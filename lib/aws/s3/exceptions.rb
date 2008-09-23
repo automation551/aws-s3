@@ -99,6 +99,14 @@ module AWS
         super(message)
       end
     end
+		
+		#Raised if bucket passed to url_for does not match bucket implicit in connection's server
+		class ServerBucketMismatch < S3Exception
+			def initialize(bucket, address)
+				message = "The bucket name inferred from your current connection's address (`#{address}') does not match the given bucket (`#{bucket}')."
+				super(message)
+			end
+		end
     
     # Raised when an orphaned S3Object belonging to no bucket tries to access its (non-existant) bucket.
     class NoBucketSpecified < S3Exception
